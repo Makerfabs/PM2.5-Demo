@@ -1,43 +1,43 @@
-#include <SoftwareSerial.h>
-#include <Wire.h> // 加入Wire库
-#include <Adafruit_GFX.h> // 加入Adafruit_GFX库
-#include <Adafruit_SSD1306.h> // 加入Adafruit_SSD1306库
+#include <SoftwareSerial.h>  //Defines the header files required for the software serial port
+#include <Wire.h> // Add the Wire library
+#include <Adafruit_GFX.h> // Add the Adafruit_GFX library
+#include <Adafruit_SSD1306.h> // Add the Adafruit_GFX library
 
 
-SoftwareSerial mySerial(2, 3); // RX, TX
+SoftwareSerial mySerial(2, 3); // Define the software serial, RX, TX  
 
 
-#define SCREEN_WIDTH 128 // 
-#define SCREEN_HEIGHT 32 // 
+#define SCREEN_WIDTH 128 // Screen width in pixels
+#define SCREEN_HEIGHT 32 // Screen height in pixels
 #define OLED_RESET -1
 
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
 
 void setup() {
-  Serial.begin(9600); // 初始化串口通信
-  mySerial.begin(9600); // 初始化软件串口通信
+  Serial.begin(9600); // Initialize serial communication
+  mySerial.begin(9600); // Initialize serial communication
   Wire.begin();
  
-    if(!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) { // I2C地址为0x3C
-    Serial.println(F("SSD1306初始化失败"));
+    if(!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) { // Initialize serial communication
+    Serial.println(F("SSD1306 initialization failed"));
     for(;;);
     display.display();
   }
 }
 
 void loop() {
-  if (mySerial.available() >= 32) { // 如果缓冲区中有32个字节可读（16进制数据每个字节占1个字符）
+  if (mySerial.available() >= 32) { // If there are 32 bytes available to read in the buffer
     uint8_t buffer[32];//A variable named "buffer" is defined, which is an unsigned array of 8-bit integers of 32 bytes (256 bits) in length.
-    mySerial.readBytes(buffer, 32); // 读取16进制数据并存储到字节数组buffer中
+    mySerial.readBytes(buffer, 32); // If there are 32 bytes available to read in the buffer
 
-    // 判断起始符是否正确
+    // Check if the start code is correct
     if (buffer[0] == 0x42 && buffer[1] == 0x4d) {
-      // 计算帧长度
+      // Calculate the frame length
       uint16_t frame_length = ((uint16_t)buffer[2] << 8) | buffer[3];
-      if (frame_length == 28) { // 判断帧长度是否正确
-        // 解析数据
-        uint16_t pm1_0_standard = ((uint16_t)buffer[4] << 8) | buffer[5];  // 使用第5、6个字节解析出标准颗粒物PM1.0的值
+      if (frame_length == 28) { // Check if the frame length is correct
+        // Parse the data
+        uint16_t pm1_0_standard = ((uint16_t)buffer[4] << 8) | buffer[5];  // Extract the value of standard particle matter PM1.0 using the 5th and 6th bytes. By parity of reasoning
         uint16_t pm2_5_standard = ((uint16_t)buffer[6] << 8) | buffer[7];
         uint16_t pm10_standard = ((uint16_t)buffer[8] << 8) | buffer[9];
         uint16_t pm1_0_atmosphere = ((uint16_t)buffer[10] << 8) | buffer[11];
@@ -51,13 +51,13 @@ void loop() {
         uint16_t particles_10 = ((uint16_t)buffer[26] << 8) | buffer[27];
         uint16_t checksum = ((uint16_t)buffer[30] << 8) | buffer[31];
 
-        // 计算数据和校验位
+        // Calculate the data checksum
         uint32_t sum = 0;
         for (int i = 0; i < 30; i++) {
           sum += buffer[i];
         }
 
-        if ((sum & 0xffff) == checksum) { // 判断校验是否正确
+        if ((sum & 0xffff) == checksum) { //by parity of reasoning
           Serial.print("PM1.0(μg/m³): ");
           Serial.println(pm1_0_standard);
           Serial.print("PM2.5(μg/m³): ");
@@ -82,26 +82,28 @@ void loop() {
           Serial.println(particles_5_0);
           Serial.print("Particles >10μm/0.1L: ");
           Serial.println(particles_10);
-                display.clearDisplay(); // 清空屏幕
 
-      display.setTextSize(1); // 文字大小
-      display.setTextColor(WHITE); // 文字颜色
-      display.setCursor(0, 0); // 设置光标位置
-      display.print("PM1.0: "); // 显示PM1.0数据
-      display.print(pm1_0_standard);
-      display.println("ug/m3");
+          
+          display.clearDisplay(); // clear the display
 
-      display.setCursor(0, 10); // 设置光标位置
-      display.print("PM2.5: "); // 显示PM2.5数据
-      display.print(pm2_5_standard);
-      display.println("ug/m3");
+          display.setTextSize(1); // Set text size
+          display.setTextColor(WHITE); // Set text color
+          display.setCursor(0, 0); // Set cursor position
+          display.print("PM1.0: "); // Display PM1.0 data
+          display.print(pm1_0_standard);
+          display.println("ug/m3");
 
-      display.setCursor(0, 20); // 设置光标位置
-      display.print("PM10: "); // 显示PM10数据
-      display.print(pm10_standard);
-      display.println("ug/m3");
+          display.setCursor(0, 10); // Set cursor position
+          display.print("PM2.5: "); // Display PM2.5 data
+          display.print(pm2_5_standard);
+          display.println("ug/m3");
 
-      display.display(); // 更新屏幕显示
+          display.setCursor(0, 20); // Set cursor position
+          display.print("PM10: "); // Display PM10 data
+          display.print(pm10_standard);
+          display.println("ug/m3");
+
+          display.display(); // Update screen display
         }
       }
     }
